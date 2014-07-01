@@ -1,4 +1,4 @@
-npm-proprietary
+nex-github
 ===============
 
-publish proprietary modules to npmjs.org
+Install private (or public) github releases as npm modules
