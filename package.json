@@ -18,7 +18,7 @@
     "nex": "^1.2"
   },
   "scripts": {
-    "test": "mocha -R spec spec -b"
+    "test": "mocha -R spec spec -b -g @public"
   },
   "repository": {
     "type": "git",
