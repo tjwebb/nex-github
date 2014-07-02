@@ -1,16 +1,24 @@
 /* jshint expr:true */
-var exec = require('child_process').execSync,
+var proc = require('child_process'),
   path = require('path'),
   fs = require('fs'),
   _ = require('lodash'),
-  log = require('npmlog'),
   Q = require('q'),
   congruence = require('congruence'),
   prompt = require('prompt');
 
+global.log = require('npmlog'),
+log.heading = 'nex';
+
 _.mixin(require('congruence'));
-log.heading = 'github';
-log.level = 'verbose';
+
+prompt.properties = {
+  org: { required: true },
+  repo: { required: true },
+  version: { required: true },
+  username: { required: true },
+  password: { hidden: true, required: true },
+};
 
 function getCurlUser(options) {
   return '"' + options.username + ':' + options.password + '"';
@@ -46,24 +54,13 @@ function getTag (options) {
 
 var github = exports;
 
-github.authPrompt = function (options) {
+github.showPrompt = function (options) {
   var deferred = Q.defer();
 
   log.info('authentication', 'Authentication via Github is required.');
-  var schema = {
-    properties: {
-      org: { required: true },
-      repo: { required: true },
-      version: { required: true },
-      username: { required: true },
-      password: { hidden: true },
-    }
-  };
-  _.each(_.keys(options || { }), function (key) {
-    delete schema.properties[key];
-  });
+
   prompt.start();
-  prompt.get(schema, function (err, result) {
+  prompt.get(_.difference(_.keys(prompt.properties), _.keys(options)), function (err, result) {
     deferred.resolve(github.getRelease(_.extend(result, options)));
   });
 
@@ -71,18 +68,21 @@ github.authPrompt = function (options) {
 };
 
 exports.getRelease = function (options) {
-  options.version || (options.version = 'master');
-
   var deferred = Q.defer();
+
+  _.defaults(options, {
+    private: false,
+    version: 'master'
+  });
+
   var template = {
+    private: _.isBoolean,
     org: _.isString,
     repo: _.isString,
-    version: _.isString,
-    username: _.isString,
-    password: _.isString
+    version: _.isString
   };
-  if (!_.congruent(template, options)) {
-    return github.authPrompt(options);
+  if (options.private || !_.similar(template, options)) {
+    return github.showPrompt(options);
   }
   var curl = [
     'curl -sL', '--user', getCurlUser(options), getCurlUrl(options), '>', getFilename(options)
@@ -92,28 +92,29 @@ exports.getRelease = function (options) {
   log.verbose('tarball url', getCurlUrl(options));
   log.http('downloading', getModuleName(options));
 
-  exec(curl);
+  var child = proc.exec(curl);
+  child.on('exit', function (err, code) {
+    if (err) deferred.reject(err);
 
-  log.http('done', getFilename(options));
+    log.http('done', getFilename(options));
 
-  if (!fs.existsSync(getFilename(options))) {
-    log.verbose('downloaded slug', getFilename(options), 'does not exist');
-    deferred.reject(new Error('Release was not successfully downloaded.'));
-  }
-  else if (/Hello future GitHubber/.test(fs.readFileSync(getFilename(options)).toString())) {
-    log.verbose('authentication', 'failed');
-    deferred.reject(new Error('Incorrect Github credentials/info was provided'));
-  }
-  else {
-    deferred.resolve(path.resolve(getFilename(options)));
-  }
+    if (!fs.existsSync(getFilename(options))) {
+      log.verbose('downloaded slug', getFilename(options), 'does not exist');
+      deferred.reject(new Error('Release was not successfully downloaded.'));
+    }
+    else if (/Hello future GitHubber/.test(fs.readFileSync(getFilename(options)).toString())) {
+      log.verbose('authentication', 'failed');
+      deferred.reject(new Error('Incorrect Github credentials/info was provided'));
+    }
+    else {
+      log.verbose('curl exit', getFilename(options));
+      deferred.resolve(path.resolve(getFilename(options)));
+    }
+  });
 
   return deferred.promise;
 };
 
-if (require.main === module) github.authPrompt({
-  org: 'xtuple',
-  repo: 'xtuple-server-commercial',
-  version: 'master',
-  username: 'tjwebb'
+if (require.main === module) github.getRelease({
+  org: 'tjwebb', repo: 'nex'
 });
