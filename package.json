@@ -5,6 +5,7 @@
   "main": "index.js",
   "dependencies": {
     "congruence": "^1.5.4",
+    "home-dir": "^0.2.0",
     "lodash": "^2.4.1",
     "npmlog": "^0.1.1",
     "prompt": "^0.2.13",

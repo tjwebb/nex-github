@@ -5,6 +5,7 @@ var proc = require('child_process'),
   _ = require('lodash'),
   Q = require('q'),
   congruence = require('congruence'),
+  home = require('home-dir'),
   prompt = require('prompt');
 
 global.log = require('npmlog'),
@@ -20,8 +21,12 @@ prompt.properties = {
   password: { hidden: true, required: true },
 };
 
+function getGithubUser(options) {
+  return options.username + ':' + options.password;
+}
+
 function getCurlUser(options) {
-  return '"' + options.username + ':' + options.password + '"';
+  return '"' + getGithubUser(options) + '"';
 }
 
 function getCurlUrl (options) {
@@ -61,7 +66,7 @@ github.showPrompt = function (options) {
 
   prompt.start();
   prompt.get(_.difference(_.keys(prompt.properties), _.keys(options)), function (err, result) {
-    deferred.resolve(github.getRelease(_.extend(result, options)));
+    deferred.resolve(github.getRelease(_.extend({ }, result, options)));
   });
 
   return deferred.promise;
@@ -70,7 +75,7 @@ github.showPrompt = function (options) {
 exports.getRelease = function (options) {
   var deferred = Q.defer();
 
-  _.defaults(options, {
+  options = _.defaults(options || { }, {
     private: false,
     version: 'master'
   });
@@ -81,7 +86,7 @@ exports.getRelease = function (options) {
     repo: _.isString,
     version: _.isString
   };
-  if (options.private || !_.similar(template, options)) {
+  if ((options.private && !options.password) || !_.similar(template, options)) {
     return github.showPrompt(options);
   }
   var curl = [
@@ -108,6 +113,11 @@ exports.getRelease = function (options) {
     }
     else {
       log.verbose('curl exit', getFilename(options));
+      if (options.private) {
+        var gitCredentials = path.resolve(home(), '.git-credentials');
+        fs.writeFileSync(gitCredentials, 'https://'+ getGithubUser(options) + '@github.com');
+        fs.chmodSync(gitCredentials, '700');
+      }
       deferred.resolve(path.resolve(getFilename(options)));
     }
   });
@@ -115,6 +125,4 @@ exports.getRelease = function (options) {
   return deferred.promise;
 };
 
-if (require.main === module) github.getRelease({
-  org: 'tjwebb', repo: 'nex'
-});
+if (require.main === module) github.getRelease();
