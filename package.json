@@ -1,6 +1,6 @@
 {
   "name": "nex-github",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "Install private (or public) github releases as npm modules",
   "main": "index.js",
   "dependencies": {
