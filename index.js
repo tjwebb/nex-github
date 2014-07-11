@@ -59,6 +59,25 @@ function getTag (options) {
 
 var github = exports;
 
+github.storeCredentials = function () {
+  var deferred = Q.defer();
+
+  log.info('authentication', 'This tool will create a .git-credentials file');
+  log.info('authentication', 'https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html');
+  log.info('authentication', 'Please enter your Github login info');
+
+  prompt.start();
+  prompt.get({ username: { required: true }, password: { required: true }}, function (err, result) {
+    var gitCredentials = path.resolve(home(), '.git-credentials');
+    fs.writeFileSync(gitCredentials, 'https://'+ getGithubUser(options) + '@github.com');
+    fs.chmodSync(gitCredentials, '700');
+
+    log.info('authentication', '~/.git-credentials file created');
+  });
+
+  return deferred.promise;
+};
+
 github.showPrompt = function (options) {
   var deferred = Q.defer();
 
@@ -72,7 +91,7 @@ github.showPrompt = function (options) {
   return deferred.promise;
 };
 
-exports.getRelease = function (options) {
+github.getRelease = function (options) {
   var deferred = Q.defer();
 
   options = _.defaults(options || { }, {
@@ -125,4 +144,4 @@ exports.getRelease = function (options) {
   return deferred.promise;
 };
 
-if (require.main === module) github.getRelease();
+if (require.main === module) github.storeCredentials();
