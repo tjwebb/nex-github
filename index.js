@@ -67,12 +67,18 @@ github.storeCredentials = function () {
   log.info('authentication', 'Please enter your Github login info');
 
   prompt.start();
-  prompt.get({ username: { required: true }, password: { required: true }}, function (err, result) {
+  prompt.get([ 'username', 'password' ], function (err, result) {
+    if (err) {
+      console.log();
+      log.warn('prompt', 'canceled');
+      process.exit(1);
+    }
     var gitCredentials = path.resolve(home(), '.git-credentials');
     fs.writeFileSync(gitCredentials, 'https://'+ getGithubUser(options) + '@github.com');
     fs.chmodSync(gitCredentials, '700');
 
     log.info('authentication', '~/.git-credentials file created');
+    deferred.resolve();
   });
 
   return deferred.promise;
@@ -85,6 +91,11 @@ github.showPrompt = function (options) {
 
   prompt.start();
   prompt.get(_.difference(_.keys(prompt.properties), _.keys(options)), function (err, result) {
+    if (err) {
+      console.log();
+      log.warn('prompt', 'canceled');
+      process.exit(1);
+    }
     deferred.resolve(github.getRelease(_.extend({ }, result, options)));
   });
 
@@ -144,4 +155,4 @@ github.getRelease = function (options) {
   return deferred.promise;
 };
 
-if (require.main === module) github.storeCredentials();
+if (require.main === module) github.getRelease();
