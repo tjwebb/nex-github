@@ -8,18 +8,20 @@
     "home-dir": "^0.2.0",
     "lodash": "^2.4.1",
     "npmlog": "^0.1.1",
-    "prompt": "^0.2.13",
-    "q": "^2.0.2"
+    "prompt": "^0.2.13"
   },
   "devDependencies": {
     "chai": "^1.9.1",
     "mocha": "^1.20.1"
   },
-  "peerDependencies": {
-    "nex": "^1.2"
-  },
+  "bundledDependencies": [
+    "home-dir",
+    "lodash",
+    "npmlog",
+    "prompt"
+  ],
   "scripts": {
-    "test": "mocha -R spec spec -b -g @public"
+    "test": "mocha --harmony -R spec spec -b -g @public"
   },
   "repository": {
     "type": "git",
@@ -38,8 +40,7 @@
     "module",
     "auth",
     "credentials",
-    "dependencies",
-    "privateDependencies"
+    "dependencies"
   ],
   "author": "Travis Webb <me@traviswebb.com>",
   "license": "MIT",
