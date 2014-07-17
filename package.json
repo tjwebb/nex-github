@@ -5,10 +5,14 @@
   "main": "index.js",
   "dependencies": {
     "congruence": "^1.5.4",
+    "cp": "^0.1.1",
     "home-dir": "^0.2.0",
     "lodash": "^2.4.1",
+    "mkdirp": "^0.5.0",
     "npmlog": "^0.1.1",
-    "prompt": "^0.2.13"
+    "prompt": "^0.2.13",
+    "rimraf": "^2.2.8",
+    "tar.gz": "^0.1.1"
   },
   "devDependencies": {
     "mocha": "^1.20.1"
