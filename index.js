@@ -97,7 +97,7 @@ function afterExtract (options) {
   var subfolder = path.resolve(options.extract, path.basename(getFilename(options), options.fileext));
   log.verbose('afterExtract subfolder', subfolder);
 
-  proc.execSync([ 'cp -r', path.resolve(subfolder, '*'), options.target ].join(' '));
+  proc.execSync([ 'cp -r', path.resolve(subfolder, '*'), options.target + '/' ].join(' '));
   rimraf.sync(path.resolve(options.extract));
 }
 
