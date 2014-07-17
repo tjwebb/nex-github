@@ -230,12 +230,7 @@ github.extractRelease.sync = function (options) {
     throw new Error('must specify an extraction target');
   }
 
-  if (fs.existsSync(options.target)) {
-    throw new Error('cannot extract into an exising directory');
-  }
-  else {
-    mkdirp.sync(options.target);
-  }
+  mkdirp.sync(options.target);
 
   var cmd = [ 
     path.resolve(__dirname, 'node_modules/.bin/targz'),
