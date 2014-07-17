@@ -1,8 +1,31 @@
-var assert = require('chai').assert;
+var assert = require('assert');
+var _ = require('lodash');
+var fs = require('fs');
 
 describe('nex-github', function () {
   var github = require('./');
   log.level = 'verbose';
+
+  describe('#getRelease.sync', function () {
+
+    describe('@public', function () {
+
+      it('should download a public release without authentication', function () {
+        var filename = github.getRelease.sync({ org: 'tjwebb', repo: 'nex' });
+
+        assert(_.isString(filename));
+        assert(fs.existsSync(filename));
+      });
+
+      it('should download a public release without authentication', function () {
+        var filename = github.getRelease.sync({ org: 'tjwebb', repo: 'nex', version: '2.0.14' });
+
+        assert(_.isString(filename));
+        assert(fs.existsSync(filename));
+      });
+
+    });
+  });
 
   describe('#getRelease', function () {
 
@@ -13,10 +36,10 @@ describe('nex-github', function () {
 
         github.getRelease({ org: 'tjwebb', repo: 'nex' })
           .then(function () {
-            assert.isTrue(true);
             done();
-          }, function () {
-            assert.fail();
+          })
+          .catch(function (err) {
+            done(err);
           });
       });
 
@@ -28,10 +51,10 @@ describe('nex-github', function () {
 
         github.getRelease({ org: 'xtuple', repo: 'xtuple-server-commercial', private: true })
           .then(function () {
-            assert.isTrue(true);
             done();
-          }, function () {
-            assert.fail();
+          })
+          .catch(function (err) {
+            done(err);
           });
       });
     });
