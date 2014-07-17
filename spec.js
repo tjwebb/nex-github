@@ -1,21 +1,44 @@
 var assert = require('assert');
 var _ = require('lodash');
 var fs = require('fs');
+var path = require('path');
+var rimraf = require('rimraf');
 
 describe('nex-github', function () {
   var github = require('./');
   log.level = 'verbose';
 
-  describe('#getRelease.sync', function () {
-
+  describe('#extractRelease.sync', function () {
     describe('@public', function () {
+      var target = path.resolve(__dirname, 'mochaextracttest');
 
-      it('should download a public release without authentication', function () {
-        var filename = github.getRelease.sync({ org: 'tjwebb', repo: 'nex' });
+      before(function () {
+        var filename = github.getRelease.sync({ org: 'tjwebb', repo: 'nex', version: '2.0.14' });
 
         assert(_.isString(filename));
         assert(fs.existsSync(filename));
+
+        rimraf.sync(target);
       });
+
+      it('should extract a downloaded public release', function () {
+        var target = path.resolve(__dirname, 'mochaextracttest');
+        github.extractRelease.sync({
+          org: 'tjwebb',
+          repo: 'nex',
+          version: '2.0.14',
+          target: target
+        });
+
+        assert(_.contains(fs.readdirSync(target), 'package.json'));
+
+      });
+    });
+  });
+
+  describe('#getRelease.sync', function () {
+
+    describe('@public', function () {
 
       it('should download a public release without authentication', function () {
         var filename = github.getRelease.sync({ org: 'tjwebb', repo: 'nex', version: '2.0.14' });
@@ -34,7 +57,7 @@ describe('nex-github', function () {
       it('should download a public release without authentication', function (done) {
         this.timeout(5000);
 
-        github.getRelease({ org: 'tjwebb', repo: 'nex' })
+        github.getRelease({ org: 'tjwebb', repo: 'nex', version: '2.0.14' })
           .then(function () {
             done();
           })

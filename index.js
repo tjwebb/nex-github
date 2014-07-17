@@ -2,8 +2,11 @@ var proc = require('child_process'),
   path = require('path'),
   fs = require('fs'),
   _ = require('lodash'),
+  rimraf = require('rimraf'),
+  mkdirp = require('mkdirp'),
   congruence = require('congruence'),
   home = require('home-dir'),
+  targz = require('tar.gz'),
   prompt = require('prompt');
 
 global.log = require('npmlog'),
@@ -56,6 +59,10 @@ function getModuleName (options) {
 }
 
 function getFilename (options) {
+  options.type = (options.version === 'master') ? 'tarball' : 'archive';
+  options.urlext = (options.type === 'tarball') ? '' : '.tar.gz';
+  options.fileext = (options.type === 'tarball') ? '.tar' : '.tar.gz';
+
   return options.repo + '-' + options.version + options.fileext;
 }
 
@@ -80,6 +87,18 @@ function afterCurl (options) {
   else {
     return path.resolve(getFilename(options));
   }
+}
+
+function afterExtract (options) {
+  log.info('tarball', 'extracted');
+
+  log.verbose('afterExtract', options.extract);
+  log.verbose('afterExtract', path.basename(getFilename(options), options.fileext));
+  var subfolder = path.resolve(options.extract, path.basename(getFilename(options), options.fileext));
+  log.verbose('afterExtract subfolder', subfolder);
+
+  proc.execSync([ 'cp -r', path.resolve(subfolder, '*'), options.target ].join(' '));
+  rimraf.sync(path.resolve(options.extract));
 }
 
 var github = exports;
@@ -126,10 +145,11 @@ github.showPrompt = function (options) {
 };
 
 github.getRelease = function (options) {
-  options = _.defaults(options || { }, {
-    private: false,
-    version: 'master'
-  });
+  _.defaults(options || (options = { }), { private: false });
+
+  if (!options.version) {
+    throw new TypeError('version is required');
+  }
 
   if ((options.private && !options.password) || !_.similar(template, options)) {
     return github.showPrompt(options);
@@ -147,8 +167,7 @@ github.getRelease = function (options) {
       if (err) reject(err);
 
       try {
-        var filename = afterCurl(options);
-        resolve(filename);
+        resolve(afterCurl(options));
       }
       catch (e) {
         reject(e);
@@ -175,8 +194,60 @@ github.getRelease.sync = function (options) {
   log.verbose('tarball url', getCurlUrl(options));
   log.http('downloading', getModuleName(options));
 
-  proc.execSync(curl, { stdio: 'inherit' });
+  proc.execSync(curl);
   return afterCurl(options);
+};
+
+github.extractRelease = function (options) {
+  options.tarball = getFilename(options);
+  options.extract = path.resolve('/tmp', path.basename(options.tarball, options.fileext));
+
+  log.info('tarball', 'extracting', tarball);
+
+  new Promise(function (resolve, reject) {
+    new targz().extract(options.tarball, options.extract, function (err) {
+      if (err) reject(err);
+
+      try {
+        resolve(afterExtract(options));
+      }
+      catch (e) {
+        reject(e);
+      }
+    });
+  });
+};
+
+github.extractRelease.sync = function (options) {
+  options.tarball = getFilename(options);
+  options.extract = path.resolve('/tmp', path.basename(options.tarball, options.fileext));
+
+  console.log(options.tarball);
+  console.log(options.extract);
+
+  rimraf.sync(options.extract);
+  if (!options.target) {
+    throw new Error('must specify an extraction target');
+  }
+
+  if (fs.existsSync(options.target)) {
+    throw new Error('cannot extract into an exising directory');
+  }
+  else {
+    mkdirp.sync(options.target);
+  }
+
+  var cmd = [ 
+    path.resolve(__dirname, 'node_modules/.bin/targz'),
+    '-x', options.tarball,
+    options.extract
+  ].join(' ');
+
+  log.verbose('tar.gz cmd', cmd);
+
+  log.info('tarball', 'extracting', options.tarball);
+  proc.execSync(cmd);
+  return afterExtract(options);
 };
 
 if (require.main === module) github.getRelease();
