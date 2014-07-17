@@ -11,6 +11,13 @@ log.heading = 'nex';
 
 _.mixin(require('congruence'));
 
+var template = {
+  private: _.isBoolean,
+  org: _.isString,
+  repo: _.isString,
+  version: _.isString
+};
+
 prompt.properties = {
   org: { required: true },
   repo: { required: true },
@@ -40,6 +47,10 @@ function getCurlUrl (options) {
   );
 }
 
+function getCurlCommand(options) {
+  return [ 'curl -sL', '--user', getCurlUser(options), getCurlUrl(options), '>', getFilename(options) ].join(' ');
+}
+
 function getModuleName (options) {
   return options.repo + '@' + options.version;
 }
@@ -53,6 +64,22 @@ function getFilename (options) {
  */
 function getTag (options) {
   return (options.version === 'master') ? 'master' : 'v' + options.version.replace(/^v/, '');
+}
+
+function afterCurl (options) {
+  log.http('done', getFilename(options));
+
+  if (!fs.existsSync(getFilename(options))) {
+    log.verbose('downloaded slug', getFilename(options), 'does not exist');
+    throw new Error('Release was not successfully downloaded.');
+  }
+  else if (/Hello future GitHubber/.test(fs.readFileSync(getFilename(options)).toString())) {
+    log.verbose('authentication', 'failed');
+    throw new Error('Incorrect Github credentials/info was provided');
+  }
+  else {
+    return path.resolve(getFilename(options));
+  }
 }
 
 var github = exports;
@@ -104,49 +131,52 @@ github.getRelease = function (options) {
     version: 'master'
   });
 
-  var template = {
-    private: _.isBoolean,
-    org: _.isString,
-    repo: _.isString,
-    version: _.isString
-  };
   if ((options.private && !options.password) || !_.similar(template, options)) {
     return github.showPrompt(options);
   }
-  var curl = [
-    'curl -sL', '--user', getCurlUser(options), getCurlUrl(options), '>', getFilename(options)
-  ].join(' ');
+
+  return new Promise(function (resolve, reject) {
+    var curl = getCurlCommand(options);
+
+    log.verbose('curl', curl);
+    log.verbose('tarball url', getCurlUrl(options));
+    log.http('downloading', getModuleName(options));
+
+    var child = proc.exec(curl);
+    child.on('exit', function (err, code) {
+      if (err) reject(err);
+
+      try {
+        var filename = afterCurl(options);
+        resolve(filename);
+      }
+      catch (e) {
+        reject(e);
+      }
+    });
+  });
+};
+
+/**
+ * @param options.username
+ * @param options.password
+ * @param options.org
+ * @param options.repo
+ * @param options.version
+ */
+github.getRelease.sync = function (options) {
+  options = _.defaults(options || { }, {
+    private: false,
+    version: 'master'
+  });
+  var curl = getCurlCommand(options);
 
   log.verbose('curl', curl);
   log.verbose('tarball url', getCurlUrl(options));
   log.http('downloading', getModuleName(options));
 
-  return new Promise(function (resolve, reject) {
-    var child = proc.exec(curl);
-    child.on('exit', function (err, code) {
-      if (err) reject(err);
-
-      log.http('done', getFilename(options));
-
-      if (!fs.existsSync(getFilename(options))) {
-        log.verbose('downloaded slug', getFilename(options), 'does not exist');
-        reject(new Error('Release was not successfully downloaded.'));
-      }
-      else if (/Hello future GitHubber/.test(fs.readFileSync(getFilename(options)).toString())) {
-        log.verbose('authentication', 'failed');
-        reject(new Error('Incorrect Github credentials/info was provided'));
-      }
-      else {
-        log.verbose('curl exit', getFilename(options));
-        if (options.private) {
-          var gitCredentials = path.resolve(home(), '.git-credentials');
-          fs.writeFileSync(gitCredentials, 'https://'+ getGithubUser(options) + '@github.com');
-          fs.chmodSync(gitCredentials, '700');
-        }
-        resolve(path.resolve(getFilename(options)));
-      }
-    });
-  });
+  proc.execSync(curl, { stdio: 'inherit' });
+  return afterCurl(options);
 };
 
 if (require.main === module) github.getRelease();
