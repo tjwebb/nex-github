@@ -62,7 +62,9 @@ function getFilename (options) {
   options.urlext = (options.type === 'tarball') ? '' : '.tar.gz';
   options.fileext = (options.type === 'tarball') ? '.tar' : '.tar.gz';
 
-  return options.repo + '-' + options.version + options.fileext;
+  options.filename = options.repo + '-' + options.version + options.fileext;
+
+  return options.filename;
 }
 
 /**
@@ -166,7 +168,8 @@ github.getRelease = function (options) {
       if (err) reject(err);
 
       try {
-        resolve(afterCurl(options));
+        afterCurl(options);
+        resolve(options);
       }
       catch (e) {
         reject(e);
@@ -190,9 +193,19 @@ github.getRelease.sync = function (options) {
   log.http('downloading', getModuleName(options));
 
   proc.execSync(curl);
-  return afterCurl(options);
+  afterCurl(options);
+
+  return options;
 };
 
+/**
+ * @param options.target
+ * @param options.username
+ * @param options.password
+ * @param options.org
+ * @param options.repo
+ * @param options.version
+ */
 github.extractRelease = function (options) {
   options.tarball = getFilename(options);
   options.extract = path.resolve('/tmp', path.basename(options.tarball, options.fileext));
@@ -204,7 +217,8 @@ github.extractRelease = function (options) {
       if (err) reject(err);
 
       try {
-        resolve(afterExtract(options));
+        afterExtract(options);
+        resolve(options);
       }
       catch (e) {
         reject(e);
@@ -237,7 +251,9 @@ github.extractRelease.sync = function (options) {
 
   log.info('tarball', 'extracting', options.tarball);
   proc.execSync(cmd);
-  return afterExtract(options);
+  afterExtract(options);
+
+  return options;
 };
 
 if (require.main === module) github.getRelease();
