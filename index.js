@@ -4,6 +4,7 @@ var proc = require('child_process'),
   _ = require('lodash'),
   rimraf = require('rimraf'),
   mkdirp = require('mkdirp'),
+  semver = require('semver'),
   congruence = require('congruence'),
   home = require('home-dir'),
   targz = require('tar.gz'),
@@ -71,7 +72,12 @@ function getFilename (options) {
  * Prepend a 'v' to the version only if it isn't already.
  */
 function getTag (options) {
-  return (options.version === 'master') ? 'master' : 'v' + options.version.replace(/^v/, '');
+  if (semver.valid(options.version)) {
+    return 'v' + options.version.replace(/^v/, '');
+  }
+  else {
+    return options.version.slice(0, 7);
+  }
 }
 
 function afterCurl (options) {
@@ -100,6 +106,7 @@ function afterExtract (options) {
 
   proc.execSync([ 'cp -r', path.resolve(subfolder, '*'), options.target + '/' ].join(' '));
   rimraf.sync(path.resolve(options.extract));
+  fs.unlinkSync(options.filename);
 }
 
 var github = exports;
@@ -208,7 +215,7 @@ github.getRelease.sync = function (options) {
  */
 github.extractRelease = function (options) {
   options.tarball = getFilename(options);
-  options.extract = path.resolve('/tmp', path.basename(options.tarball, options.fileext));
+  options.extract = '/tmp';
 
   log.info('tarball', 'extracting', tarball);
 
@@ -229,10 +236,7 @@ github.extractRelease = function (options) {
 
 github.extractRelease.sync = function (options) {
   options.tarball = getFilename(options);
-  options.extract = path.resolve('/tmp', path.basename(options.tarball, options.fileext));
-
-  console.log(options.tarball);
-  console.log(options.extract);
+  options.extract = '/tmp';
 
   rimraf.sync(options.extract);
   if (!options.target) {
