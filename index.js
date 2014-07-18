@@ -238,7 +238,6 @@ github.extractRelease.sync = function (options) {
   options.tarball = getFilename(options);
   options.extract = '/tmp';
 
-  rimraf.sync(options.extract);
   if (!options.target) {
     throw new Error('must specify an extraction target');
   }
