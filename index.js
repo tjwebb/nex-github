@@ -193,6 +193,14 @@ github.getRelease.sync = function (options) {
   return afterCurl(options);
 };
 
+/**
+ * @param options.target
+ * @param options.username
+ * @param options.password
+ * @param options.org
+ * @param options.repo
+ * @param options.version
+ */
 github.extractRelease = function (options) {
   options.tarball = getFilename(options);
   options.extract = path.resolve('/tmp', path.basename(options.tarball, options.fileext));
