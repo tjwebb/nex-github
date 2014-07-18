@@ -4,4 +4,4 @@ node_js:
   - "0.11"
 
 before_install:
-  - sudo chmod 777 /tmp
+  - sudo chmod -R 777 /tmp
