@@ -13,10 +13,10 @@ describe('nex-github', function () {
       var target = path.resolve(__dirname, 'mochaextracttest');
 
       before(function () {
-        var filename = github.getRelease.sync({ org: 'tjwebb', repo: 'nex', version: '2.0.14' });
+        var result = github.getRelease.sync({ org: 'tjwebb', repo: 'nex', version: '2.0.14' });
 
-        assert(_.isString(filename));
-        assert(fs.existsSync(filename));
+        assert(_.isString(result.filename));
+        assert(fs.existsSync(result.filename));
 
         rimraf.sync(target);
       });
@@ -35,17 +35,42 @@ describe('nex-github', function () {
       });
     });
   });
+  describe('#extractRelease.sync', function () {
+    describe('@public', function () {
+      var target = path.resolve(__dirname, 'mochaextracttest');
+
+
+      it('can chain promises', function () {
+        this.timeout(5000);
+
+        var release = { org: 'tjwebb', repo: 'nex', version: '2.0.14' };
+
+        github.getRelease(release)
+          .then(function (filename) {
+            release.target = process.cwd();
+            return github.extractRelease(release);
+          })
+          .then(function () {
+            done();
+          })
+          .catch(function (err) {
+            done(err);
+          });
+      });
+    });
+  });
 
   describe('#getRelease.sync', function () {
 
     describe('@public', function () {
 
       it('should download a public release without authentication', function () {
-        var filename = github.getRelease.sync({ org: 'tjwebb', repo: 'nex', version: '2.0.14' });
+        var result = github.getRelease.sync({ org: 'tjwebb', repo: 'nex', version: '2.0.14' });
 
-        assert(_.isString(filename));
-        assert(fs.existsSync(filename));
+        assert(_.isString(result.filename));
+        assert(fs.existsSync(result.filename));
       });
+
 
     });
   });
