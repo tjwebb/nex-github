@@ -15,7 +15,6 @@ log.heading = 'nex';
 _.mixin(require('congruence'));
 
 var template = {
-  private: _.isBoolean,
   org: _.isString,
   repo: _.isString,
   version: _.isString
@@ -145,7 +144,7 @@ github.showPrompt = function (options) {
 };
 
 github.getRelease = function (options) {
-  _.defaults(options || (options = { }), { private: false });
+  options || (options = { });
 
   if (!options.version) {
     throw new TypeError('version is required');
@@ -184,10 +183,6 @@ github.getRelease = function (options) {
  * @param options.version
  */
 github.getRelease.sync = function (options) {
-  options = _.defaults(options || { }, {
-    private: false,
-    version: 'master'
-  });
   var curl = getCurlCommand(options);
 
   log.verbose('curl', curl);
