@@ -26,8 +26,16 @@
     "rimraf",
     "tar.gz"
   ],
+  "nex": [
+    "engines"
+  ],
   "scripts": {
+    "preinstall": "nex do",
+    "pretest": "nex do",
     "test": "mocha --harmony -R spec spec -b -g @public"
+  },
+  "engines": {
+    "node": ">=0.11.13 <0.12.0"
   },
   "repository": {
     "type": "git",

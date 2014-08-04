@@ -10,6 +10,11 @@ var proc = require('child_process'),
   targz = require('tar.gz'),
   prompt = require('prompt');
 
+var defaults = {
+  username: process.env.GITHUB_USERNAME,
+  password: process.env.GITHUB_PASSWORD
+};
+
 global.log = require('npmlog'),
 log.heading = 'nex';
 
@@ -111,30 +116,6 @@ function afterExtract (options) {
 
 var github = exports;
 
-github.storeCredentials = function () {
-  log.info('authentication', 'This tool will create a .git-credentials file');
-  log.info('authentication', 'https://www.kernel.org/pub/software/scm/git/docs/git-credential-store.html');
-  log.info('authentication', 'Please enter your Github login info');
-
-  prompt.start();
-
-  return new Promise(function (resolve, reject) {
-    prompt.get([ 'username', 'password' ], function (err, result) {
-      if (err) {
-        console.log();
-        log.warn('prompt', 'canceled');
-        reject();
-      }
-      var gitCredentials = path.resolve(home(), '.git-credentials');
-      fs.writeFileSync(gitCredentials, 'https://'+ getGithubUser(options) + '@github.com');
-      fs.chmodSync(gitCredentials, '700');
-
-      log.info('authentication', '~/.git-credentials file created');
-      resolve();
-    });
-  });
-};
-
 github.showPrompt = function (options) {
   log.info('authentication', 'Authentication via Github is required.');
 
@@ -153,7 +134,7 @@ github.showPrompt = function (options) {
 };
 
 github.getRelease = function (options) {
-  options || (options = { });
+  options = _.defaults({ }, options, defaults);
 
   if (!options.version) {
     throw new TypeError('version is required');
@@ -215,7 +196,9 @@ github.getRelease.sync = function (options) {
  */
 github.extractRelease = function (options) {
   options.tarball = getFilename(options);
-  options.extract = '/tmp';
+  options.extract = '.tmp';
+  rimraf.sync(options.extract);
+  mkdirp.sync(options.extract);
 
   log.info('tarball', 'extracting', tarball);
 
@@ -236,9 +219,10 @@ github.extractRelease = function (options) {
 
 github.extractRelease.sync = function (options) {
   options.tarball = getFilename(options);
-  options.extract = '/tmp';
+  options.extract = '.tmp';
 
   rimraf.sync(options.extract);
+  mkdirp.sync(options.extract);
   if (!options.target) {
     throw new Error('must specify an extraction target');
   }
