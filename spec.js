@@ -95,9 +95,9 @@ describe('nex-github', function () {
     describe('@private', function () {
       /** This can be un-skipped for local development */
       it('should download a private release with authentication', function (done) {
-        this.timeout(5000);
+        this.timeout(0);
 
-        github.getRelease({ org: 'xtuple', repo: 'xtuple-server-commercial', private: true })
+        github.getRelease({ org: 'xtuple', repo: 'xtuple-server-commercial', version: '1.0.9', private: true })
           .then(function () {
             done();
           })

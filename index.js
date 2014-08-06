@@ -10,11 +10,6 @@ var proc = require('child_process'),
   targz = require('tar.gz'),
   prompt = require('prompt');
 
-var defaults = {
-  username: process.env.GITHUB_USERNAME,
-  password: process.env.GITHUB_PASSWORD
-};
-
 global.log = require('npmlog'),
 log.heading = 'nex';
 
@@ -124,17 +119,18 @@ github.showPrompt = function (options) {
   return new Promise(function (resolve, reject) {
     prompt.get(_.difference(_.keys(prompt.properties), _.keys(options)), function (err, result) {
       if (err) {
-        console.log();
+        console.log(err);
         log.warn('prompt', 'canceled');
         process.exit(1);
       }
+      console.log(result);
       resolve(github.getRelease(_.extend({ }, result, options)));
     });
   });
 };
 
 github.getRelease = function (options) {
-  options = _.defaults({ }, options, defaults);
+  options || (options = { });
 
   if (!options.version) {
     throw new TypeError('version is required');
