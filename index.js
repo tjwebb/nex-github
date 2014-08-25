@@ -123,7 +123,6 @@ github.showPrompt = function (options) {
         log.warn('prompt', 'canceled');
         process.exit(1);
       }
-      console.log(result);
       resolve(github.getRelease(_.extend({ }, result, options)));
     });
   });
